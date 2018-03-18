@@ -108,6 +108,11 @@ h1 {
   padding: 1.25em 0 1em;
   outline: 1px solid #ccc;
   transition: 1s; }
+
+
+  .players h2 {
+    color: rgba(0, 0, 0, 0.5);
+    z-index: 999999; }
   .players svg g {
     fill: rgba(0, 0, 0, 0.25); }
   .players:first-child {

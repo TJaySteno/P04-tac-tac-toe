@@ -3,6 +3,9 @@ $('window').ready(() => {
     START SCREEN AND WIN SCREEN
   ************************************************/
 
+  $('#player1').append('<h2>Player 1</h2>');
+  $('#player2').append('<h2>Player 2</h2>');
+
   // Create start screen and assign 'click' listener to 'Start game' button
   const $startScreen = $(`
       <div class="screen screen-start" id="start">
@@ -12,12 +15,17 @@ $('window').ready(() => {
           <input type="text" id="p1-name" placeholder="Enter your name"><br>
           <label for="#p2-name">Player 2</label><br>
           <input type="text" id="p2-name" placeholder="Enter your name"><br>
-          <a href="#" class="button">P1 vs P2</a>
-          <a href="#" class="button">P1 vs AI</a>
+          <a href="#" class="button" name="pvp">P1 vs P2</a>
+          <a href="#" class="button" name="pve">P1 vs AI</a>
         </header>
       </div>
     `);
-  $startScreen.find('a').click(() => {
+  $startScreen.find('a').click(e => {
+    const gameInfo = { p1: $('#p1-name').val() };
+    if (e.target.name === 'pvp') gameInfo.p2 = $('#p2-name').val();
+    else gameInfo.p2 = 'Computer';
+
+
     $startScreen.hide();
     $('#board').show();
     $('#player1').addClass('active');
