@@ -3,8 +3,8 @@ $('window').ready(() => {
     START SCREEN AND WIN SCREEN
   ************************************************/
 
-  $('#player1').append('<h2>Player 1</h2>');
-  $('#player2').append('<h2>Player 2</h2>');
+  $('#player1').append('<span></span>');
+  $('#player2').append('<span></span>');
 
   // Create start screen and assign 'click' listener to 'Start game' button
   const $startScreen = $(`
@@ -25,8 +25,9 @@ $('window').ready(() => {
     if (e.target.name === 'pvp') gameInfo.p2 = $('#p2-name').val();
     else gameInfo.p2 = 'Computer';
 
-
     $startScreen.hide();
+    $('#player1 span').text(gameInfo.p1);
+    $('#player2 span').text(gameInfo.p2);
     $('#board').show();
     $('#player1').addClass('active');
   });
@@ -127,8 +128,21 @@ $('window').ready(() => {
     if (player === 'cat') {
       $victoryScreen.addClass('screen-win-tie');
       $victoryScreen.find('p').text("It's a Tie!"); }
-    else if (player === 'player1') $victoryScreen.addClass('screen-win-one');
-    else $victoryScreen.addClass('screen-win-two');
+    else if (player === 'player1') {
+      let text = $('#player1 span').text();
+      console.log(text);
+      if (text !== '') text += ' wins!';
+      else text = 'Winner!';
+      $victoryScreen.addClass('screen-win-one');
+      $victoryScreen.find('p').text(text);
+    } else {
+      let text = $('#player2 span').text();
+      console.log(text);
+      if (text !== '') text += ' wins!';
+      else text = 'Winner!';
+      $victoryScreen.addClass('screen-win-two');
+      $victoryScreen.find('p').text(text);
+    }
     $('#board').hide();
     $victoryScreen.show();
   }
