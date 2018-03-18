@@ -1,8 +1,3 @@
-// Switch to number map. L to R 01 02 03. T to B 10 20 30.
-  // 11 12 13
-  // 21 22 23
-  // 31 32 33
-
 $('window').ready(() => {
   /************************************************
     START SCREEN AND WIN SCREEN
@@ -13,8 +8,12 @@ $('window').ready(() => {
       <div class="screen screen-start" id="start">
         <header>
           <h1>Tic Tac Toe</h1>
-          <input type="text" id="name" placeholder="Name"><br>
-          <a href="#" class="button">Start game</a>
+          <label for="#p1-name">Player 1</label><br>
+          <input type="text" id="p1-name" placeholder="Enter your name"><br>
+          <label for="#p2-name">Player 2</label><br>
+          <input type="text" id="p2-name" placeholder="Enter your name"><br>
+          <a href="#" class="button">P1 vs P2</a>
+          <a href="#" class="button">P1 vs AI</a>
         </header>
       </div>
     `);
