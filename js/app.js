@@ -186,7 +186,6 @@ $('window').ready(() => {
     if (!$(e.target).hasClass('box-filled-1')
     &&  !$(e.target).hasClass('box-filled-2')) {
       $('.active').removeClass('active');
-      console.log('no class');
       if (player === 'player1') {
         $(e.target).addClass('box-filled-1');
         $('#player2').addClass('active');
@@ -226,7 +225,9 @@ $('window').ready(() => {
         return regex.test(this.name);
       }
     });
-    markBoard($li);
+
+    if ($li.length === 1) markBoard($li);
+    else markBoard($($li[0]));
 
     $('#player2').removeClass('active');
     $('#player1').addClass('active');
