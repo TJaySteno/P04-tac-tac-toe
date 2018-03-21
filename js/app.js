@@ -22,12 +22,19 @@ $('window').ready(() => {
     `);
   $startScreen.find('a').click(e => {
     const gameInfo = { p1: $('#p1-name').val() };
-    if (e.target.name === 'pvp') gameInfo.p2 = $('#p2-name').val();
-    else gameInfo.p2 = 'Computer';
+    if (e.target.name === 'pvp') {
+      gameInfo.p2 = $('#p2-name').val();
+      gameInfo.ai = false;
+    } else {
+      gameInfo.p2 = 'Computer';
+      gameInfo.ai = true;
+    }
 
     $startScreen.hide();
     $('#player1 span').text(gameInfo.p1);
     $('#player2 span').text(gameInfo.p2);
+    if (gameInfo.ai) $('#player2 span').prop('name', 'ai');
+    else $('#player2 span').prop('name', 'p2');
     $('#board').show();
     $('#player1').addClass('active');
   });
@@ -69,7 +76,7 @@ $('window').ready(() => {
     Horiz lines marked by first digit
     Vert lines marked by second digit
     'y' for 00 to 22 line, and 'z' for 02 to 20 line
-    'c' for corner, 's' for side, 'yz' is mid
+    's' for side
   */
   let tens = 0;
   let ones = -1;
@@ -85,34 +92,45 @@ $('window').ready(() => {
     else if (i % 2 === 1) this.name += 's';
     else if (i === 0 || i === 8) this.name += 'yc';
     else if (i === 2 || i === 6) this.name += 'zc';
-    console.log(this.name);
   });
 
   // Check clicked boxes and test against winning patterns; on victory, loads win screen
   const checkForWin = player => {
     const checkedBoxes = findCheckedBoxes(player);
-    if (testCheckedBoxes(checkedBoxes)) loadVictory(player);
-    else if (checkedBoxes.split(/\d\d/).length === 6) loadVictory('cat');
+    if (testCheckedBoxes(checkedBoxes.string)) {
+      loadVictory(player);
+      return false;
+    } else if (checkedBoxes.string.split(/\d\d/).length === 6) {
+      loadVictory('cat');
+      return false;
+    } else return true;
   }
 
   // Combine the names of a player's boxes into a string
   const findCheckedBoxes = player => {
-    let message = '';
-    if (player === 'player1') $boxes.find('.box-filled-1').each(function () { message += this.name });
-    else $boxes.find('.box-filled-2').each(function () { message += this.name });
-    return message;
+    const boxInfo = { string: '' };
+    if (player === 'player1') {
+      boxInfo.$elements = $boxes.find('.box-filled-1');
+      boxInfo.$elements.each(function () {
+        boxInfo.string += this.name;
+      });
+    } else {
+      boxInfo.$elements = $boxes.find('.box-filled-2');
+      boxInfo.$elements.each(function () { boxInfo.string += this.name });
+    }
+    return boxInfo;
   }
 
   // Test a string representing checked boxes against winning patterns
-  const testCheckedBoxes = checkedBoxes => {
-    if ( /0\d\w*0\d\w*0\d/.test(checkedBoxes)
-      || /1\d\w*1\d\w*1\d/.test(checkedBoxes)
-      || /2\d\w*2\d\w*2\d/.test(checkedBoxes)
-      || /\d0\w*\d0\w*\d0/.test(checkedBoxes)
-      || /\d1\w*\d1\w*\d1/.test(checkedBoxes)
-      || /\d2\w*\d2\w*\d2/.test(checkedBoxes)
-      || /y\w*y\w*y/.test(checkedBoxes)
-      || /z\w*z\w*z/.test(checkedBoxes) ) return true;
+  const testCheckedBoxes = boxesString => {
+    if ( /0\d\w*0\d\w*0\d/.test(boxesString)
+      || /1\d\w*1\d\w*1\d/.test(boxesString)
+      || /2\d\w*2\d\w*2\d/.test(boxesString)
+      || /\d0\w*\d0\w*\d0/.test(boxesString)
+      || /\d1\w*\d1\w*\d1/.test(boxesString)
+      || /\d2\w*\d2\w*\d2/.test(boxesString)
+      || /y\w*y\w*y/.test(boxesString)
+      || /z\w*z\w*z/.test(boxesString) ) return true;
   }
 
   // Resets the board, then loads the victor's win screen
@@ -127,17 +145,15 @@ $('window').ready(() => {
     const $victoryScreen = $('#finish');
     if (player === 'cat') {
       $victoryScreen.addClass('screen-win-tie');
-      $victoryScreen.find('p').text("It's a Tie!"); }
-    else if (player === 'player1') {
+      $victoryScreen.find('p').text("It's a Tie!");
+    } else if (player === 'player1') {
       let text = $('#player1 span').text();
-      console.log(text);
       if (text !== '') text += ' wins!';
       else text = 'Winner!';
       $victoryScreen.addClass('screen-win-one');
       $victoryScreen.find('p').text(text);
     } else {
       let text = $('#player2 span').text();
-      console.log(text);
       if (text !== '') text += ' wins!';
       else text = 'Winner!';
       $victoryScreen.addClass('screen-win-two');
@@ -166,10 +182,11 @@ $('window').ready(() => {
   // When a box not yet selected is clicked, add a class to that box, indicate the next player's turn, then check for victory
   $boxes.click(e => {
     const player = $('.active').prop('id');
-    $('.active').removeClass('active');
 
     if (!$(e.target).hasClass('box-filled-1')
     &&  !$(e.target).hasClass('box-filled-2')) {
+      $('.active').removeClass('active');
+      console.log('no class');
       if (player === 'player1') {
         $(e.target).addClass('box-filled-1');
         $('#player2').addClass('active');
@@ -178,7 +195,93 @@ $('window').ready(() => {
         $('#player1').addClass('active');
       }
 
-      checkForWin(player);
+      if (checkForWin(player)
+      && $('#player2 span').prop('name') === 'ai') aiBrain();
     }
   });
+
+
+
+
+
+
+
+  /************************************************
+    BOARD SCREEN - vs A.I.
+  ************************************************/
+
+  // This function looks at the board, decides which line or square to mark, then makes the changes to the DOM. Triggers victory when appropriate.
+    // P1 === 0
+    // AI === X
+  const aiBrain = () => {
+    const o = findCheckedBoxes('player1');
+    const x = findCheckedBoxes('player2');
+
+    const regex = winOrBlock(x.string, o.string) ||
+                  winOrBlock(o.string, x.string) ||
+                  findFork(o.string, x.string) ||
+                  findOther(o, x);
+    const $li = $('.boxes').children().filter(function () {
+      if (!$(this).hasClass('box-filled-1') && !$(this).hasClass('box-filled-2')) {
+        return regex.test(this.name);
+      }
+    });
+    markBoard($li);
+
+    $('#player2').removeClass('active');
+    $('#player1').addClass('active');
+
+    setTimeout(() => checkForWin('player2'), 300);
+  }
+
+  // Search the board for unblocked rows of 2. Args: (you, them) finds win, (them, you) finds block.
+  const winOrBlock = (active, reactive) => {
+    if      (/0\d\w*0\d/.test(active) && !/0\d/.test(reactive)) return /0\d/;
+    else if (/1\d\w*1\d/.test(active) && !/1\d/.test(reactive)) return /1\d/;
+    else if (/2\d\w*2\d/.test(active) && !/2\d/.test(reactive)) return /2\d/;
+    else if (/\d0\w*\d0/.test(active) && !/\d0/.test(reactive)) return /\d0/;
+    else if (/\d1\w*\d1/.test(active) && !/\d1/.test(reactive)) return /\d1/;
+    else if (/\d2\w*\d2/.test(active) && !/\d2/.test(reactive)) return /\d2/;
+    else if (    /y\w*y/.test(active) &&   !/y/.test(reactive)) return /y/;
+    else if (    /z\w*z/.test(active) &&   !/z/.test(reactive)) return /z/;
+    else return false;
+  }
+
+  // Search the board for potential forks. Args: (you, them) creates your fork, (them, you) blocks theirs.
+  const findFork = (active, reactive) => {
+    if ( (/yc\w*yc/.test(active) && !/zc/.test(reactive)
+          || /zc\w*zc/.test(active) && !/yc/.test(reactive))
+        && !/s/.test(reactive) ) {
+        return /01/;
+    } else return false;
+  }
+
+  const findOther = (player, comp) => {
+    if (!/11/.test(player.string + comp.string)) {
+      // Mid first
+      return /11/;
+    } else if (/yc/.test(player.string)
+            && !/yc\w*yc/.test(player.string)
+            && !/yc/.test(comp.string)) {
+      // Opposite corner, y
+      return /yc/;
+    } else if (/zc/.test(player.string)
+            && !/zc\w*zc/.test(player.string)
+            && !/zc/.test(comp.string)) {
+      // Opposite corner, z
+      return /zc/;
+    } else if (!/c\w*c\w*c\w*c/.test(player.string + comp.string)) {
+      // Empty corner
+      return /c/;
+    } else {
+      // Empty side
+      return /s/
+    }
+  }
+
+  const markBoard = $li => {
+    setTimeout(() => {
+      $li.addClass('box-filled-2').css('background-image', "url('img/x.svg')");
+    }, 100);
+  };
 });
