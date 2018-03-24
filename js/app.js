@@ -3,24 +3,36 @@ $('window').ready(() => {
     START SCREEN AND WIN SCREEN
   ************************************************/
 
+  // Create space for names, if entered
   $('#player1').append('<span></span>');
   $('#player2').append('<span></span>');
 
-  // Create start screen and assign 'click' listener to 'Start game' button
+  // Create start and win screens
   const $startScreen = $(`
       <div class="screen screen-start" id="start">
         <header>
           <h1>Tic Tac Toe</h1>
           <label for="#p1-name">Player 1</label><br>
-          <input type="text" id="p1-name" placeholder="Enter your name"><br>
+          <input type="text" id="p1-name" placeholder="Enter name"><br>
           <label for="#p2-name">Player 2</label><br>
-          <input type="text" id="p2-name" placeholder="Enter your name"><br>
+          <input type="text" id="p2-name" placeholder="Enter name"><br>
           <a href="#" class="button" name="pvp">P1 vs P2</a>
           <a href="#" class="button" name="pve">P1 vs AI</a>
         </header>
       </div>
     `);
+    const $winScreen = $(`
+        <div class="screen screen-win" id="finish">
+          <header>
+            <h1>Tic Tac Toe</h1>
+            <p class="message">Winner</p>
+            <a href="#" class="button">New game</a>
+          </header>
+        </div>
+      `).hide();
+
   $startScreen.find('a').click(e => {
+    // On click of an anchor element, pull appropriate info and hide start screen...
     const gameInfo = { p1: $('#p1-name').val() };
     if (e.target.name === 'pvp') {
       gameInfo.p2 = $('#p2-name').val();
@@ -29,8 +41,9 @@ $('window').ready(() => {
       gameInfo.p2 = 'Computer';
       gameInfo.ai = true;
     }
-
     $startScreen.hide();
+
+    // ...then fill board with proper info, give 'name' to #player2 in order to tell app later which was selected
     $('#player1 span').text(gameInfo.p1);
     $('#player2 span').text(gameInfo.p2);
     if (gameInfo.ai) $('#player2 span').prop('name', 'ai');
@@ -39,26 +52,20 @@ $('window').ready(() => {
     $('#player1').addClass('active');
   });
 
-  // Create win screen and assign 'click' listener to 'New game' button. This listener also resets win screen.
-  const $winScreen = $(`
-      <div class="screen screen-win" id="finish">
-        <header>
-          <h1>Tic Tac Toe</h1>
-          <p class="message">Winner</p>
-          <a href="#" class="button">New game</a>
-        </header>
-      </div>
-    `).hide();
+  // On clicking anchor element on win screen, reset and hide win screen, then show start screen
   $winScreen.find('a').click(() => {
-    $winScreen.hide().find('p').text('Winner');
-    $winScreen.removeClass('screen-win-tie')
+    $winScreen.hide()
+              .removeClass('screen-win-tie')
               .removeClass('screen-win-one')
-              .removeClass('screen-win-two');
+              .removeClass('screen-win-two')
+              .find('p').text('Winner');
     $('#start').show();
   });
 
   // Hide game board, then insert start and win screens before and after
-  $('#board').hide().before($startScreen).after($winScreen);
+  $('#board').hide()
+             .before($startScreen)
+             .after($winScreen);
 
 
 
@@ -68,15 +75,11 @@ $('window').ready(() => {
 
   const $boxes = $('.boxes');
 
-  /* Give each box a unique name
-    00yc 01s  02zc
-    10s  11yz 12s
-    20zc 21s  22yc
-
-    Horiz lines marked by first digit
-    Vert lines marked by second digit
-    'y' for 00 to 22 line, and 'z' for 02 to 20 line
-    's' for side
+  // Give each box a unique name
+  /*
+    00yc  01s   02zc   - Horiz lines marked by first digit
+    10s   11yz  12s    - Vert lines marked by second digit
+    20zc  21s   22yc   - Diag marked by 'y' (00 -> 22) and 'z' (02 -> 20); 's' for side
   */
   let tens = 0;
   let ones = -1;
@@ -94,30 +97,23 @@ $('window').ready(() => {
     else if (i === 2 || i === 6) this.name += 'zc';
   });
 
-  // Check clicked boxes and test against winning patterns; on victory, loads win screen
+  // Test boxes against winning patterns; on victory or full board, load win screen
   const checkForWin = player => {
     const checkedBoxes = findCheckedBoxes(player);
-    if (testCheckedBoxes(checkedBoxes.string)) {
+    if (testCheckedBoxes(checkedBoxes)) {
       loadVictory(player);
       return false;
-    } else if (checkedBoxes.string.split(/\d\d/).length === 6) {
+    } else if (checkedBoxes.split(/\d\d/).length === 6) {
       loadVictory('cat');
       return false;
     } else return true;
   }
 
-  // Combine the names of a player's boxes into a string
+  // Combine the names of a player's boxes into a string for regex testing
   const findCheckedBoxes = player => {
-    const boxInfo = { string: '' };
-    if (player === 'player1') {
-      boxInfo.$elements = $boxes.find('.box-filled-1');
-      boxInfo.$elements.each(function () {
-        boxInfo.string += this.name;
-      });
-    } else {
-      boxInfo.$elements = $boxes.find('.box-filled-2');
-      boxInfo.$elements.each(function () { boxInfo.string += this.name });
-    }
+    let boxInfo = '';
+    if (player === 'player1') $boxes.find('.box-filled-1').each(function () { boxInfo += this.name });
+    else                      $boxes.find('.box-filled-2').each(function () { boxInfo += this.name });
     return boxInfo;
   }
 
@@ -129,11 +125,11 @@ $('window').ready(() => {
       || /\d0\w*\d0\w*\d0/.test(boxesString)
       || /\d1\w*\d1\w*\d1/.test(boxesString)
       || /\d2\w*\d2\w*\d2/.test(boxesString)
-      || /y\w*y\w*y/.test(boxesString)
-      || /z\w*z\w*z/.test(boxesString) ) return true;
+      ||       /y\w*y\w*y/.test(boxesString)
+      ||       /z\w*z\w*z/.test(boxesString) ) return true;
   }
 
-  // Resets the board, then loads the victor's win screen
+  // On win or tie, reset and hide the board, then load the proper win screen
   const loadVictory = player => {
     $(`#player2`).removeClass('active');
     $boxes.children().each(function () {
@@ -163,7 +159,7 @@ $('window').ready(() => {
     $victoryScreen.show();
   }
 
-  // On mouseover of a box not yet selected, display an O or X
+  // On mouseover of an un-filled box, display an O or X
   $boxes.mouseover(e => {
     if (!$(e.target).hasClass('box-filled-1')
     &&  !$(e.target).hasClass('box-filled-2')) {
@@ -173,13 +169,13 @@ $('window').ready(() => {
     }
   });
 
-  // On mouseout from a box not yet selected, remove an O or X
+  // On mouseover of an un-filled box, remove an O or X
   $boxes.mouseout(e => {
     if (!$(e.target).hasClass('box-filled-1')
     &&  !$(e.target).hasClass('box-filled-2')) $(e.target).css('background-image', 'none');
   });
 
-  // When a box not yet selected is clicked, add a class to that box, indicate the next player's turn, then check for victory
+  // Upon clicking an un-filled box: add 'box-filled' class, indicate the next player's turn, then check for victory. Calls A.I. scripts when needed.
   $boxes.click(e => {
     const player = $('.active').prop('id');
 
@@ -209,80 +205,67 @@ $('window').ready(() => {
     BOARD SCREEN - vs A.I.
   ************************************************/
 
-  // This function looks at the board, decides which line or square to mark, then makes the changes to the DOM. Triggers victory when appropriate.
-    // P1 === 0
-    // AI === X
+  // Search for immediate threats; unblocked rows of 2
+    // Args: (AI, P1) finds win, (P1, AI) finds block
+  const winOrBlock = (subject, other) => {
+    if      (/0\d\w*0\d/.test(subject) && !/0\d/.test(other)) return /0\d/;
+    else if (/1\d\w*1\d/.test(subject) && !/1\d/.test(other)) return /1\d/;
+    else if (/2\d\w*2\d/.test(subject) && !/2\d/.test(other)) return /2\d/;
+    else if (/\d0\w*\d0/.test(subject) && !/\d0/.test(other)) return /\d0/;
+    else if (/\d1\w*\d1/.test(subject) && !/\d1/.test(other)) return /\d1/;
+    else if (/\d2\w*\d2/.test(subject) && !/\d2/.test(other)) return /\d2/;
+    else if (    /y\w*y/.test(subject) &&   !/y/.test(other)) return /y/;
+    else if (    /z\w*z/.test(subject) &&   !/z/.test(other)) return /z/;
+    else return false;
+  }
+
+  // Prevent potential forks; only one possible since someone always starts mid
+  const findFork = (o, x) => {
+    if ( !/s/.test(x)
+       && (  /yc\w*yc/.test(o) && !/zc/.test(x)
+          || /zc\w*zc/.test(o) && !/yc/.test(x)) ) return /01/;
+    else return false;
+  }
+
+  // Prioritize other squares: mid, opposite corners, other corners, then sides
+  const findOther = (player, comp) => {
+    if (!/11/.test(player + comp)) { return /11/; }
+    else if (/yc/.test(player)
+         && !/yc\w*yc/.test(player + comp)) { return /yc/; }
+    else if (/zc/.test(player)
+         && !/zc\w*zc/.test(player + comp)) { return /zc/; }
+    else if (!/c\w*c\w*c\w*c/.test(player + comp)) { return /c/; }
+    else { return /s/ }
+  }
+
+  // Style a given box after a slight pause (immediate play felt wrong/weird)
+  const markBoard = $box => {
+    setTimeout(() => {
+      $box.addClass('box-filled-2').css('background-image', "url('img/x.svg')");
+    }, 100);
+  };
+
+  // Survey the board, decide which square to mark, and check for victory
   const aiBrain = () => {
     const o = findCheckedBoxes('player1');
     const x = findCheckedBoxes('player2');
 
-    const regex = winOrBlock(x.string, o.string) ||
-                  winOrBlock(o.string, x.string) ||
-                  findFork(o.string, x.string) ||
+    // In order test for: win, block, potential fork, otherwise find best remaining square
+    const regex = winOrBlock(x, o) ||
+                  winOrBlock(o, x) ||
+                  findFork(o, x) ||
                   findOther(o, x);
-    const $li = $('.boxes').children().filter(function () {
-      if (!$(this).hasClass('box-filled-1') && !$(this).hasClass('box-filled-2')) {
-        return regex.test(this.name);
-      }
-    });
 
-    if ($li.length === 1) markBoard($li);
-    else markBoard($($li[0]));
+    // Test regex against unfilled boxes, mark the proper box, and end turn
+    const $box = $('.boxes').children().filter(function () {
+      if (!$(this).hasClass('box-filled-1') && !$(this).hasClass('box-filled-2')) return regex.test(this.name) });
+
+    if ($box.length === 1) markBoard($box);
+    else markBoard($($box[0]));
 
     $('#player2').removeClass('active');
     $('#player1').addClass('active');
 
-    setTimeout(() => checkForWin('player2'), 300);
+    setTimeout(() => checkForWin('player2'), 150);
   }
-
-  // Search the board for unblocked rows of 2. Args: (you, them) finds win, (them, you) finds block.
-  const winOrBlock = (active, reactive) => {
-    if      (/0\d\w*0\d/.test(active) && !/0\d/.test(reactive)) return /0\d/;
-    else if (/1\d\w*1\d/.test(active) && !/1\d/.test(reactive)) return /1\d/;
-    else if (/2\d\w*2\d/.test(active) && !/2\d/.test(reactive)) return /2\d/;
-    else if (/\d0\w*\d0/.test(active) && !/\d0/.test(reactive)) return /\d0/;
-    else if (/\d1\w*\d1/.test(active) && !/\d1/.test(reactive)) return /\d1/;
-    else if (/\d2\w*\d2/.test(active) && !/\d2/.test(reactive)) return /\d2/;
-    else if (    /y\w*y/.test(active) &&   !/y/.test(reactive)) return /y/;
-    else if (    /z\w*z/.test(active) &&   !/z/.test(reactive)) return /z/;
-    else return false;
-  }
-
-  // Search the board for potential forks. Args: (you, them) creates your fork, (them, you) blocks theirs.
-  const findFork = (active, reactive) => {
-    if ( (/yc\w*yc/.test(active) && !/zc/.test(reactive)
-          || /zc\w*zc/.test(active) && !/yc/.test(reactive))
-        && !/s/.test(reactive) ) {
-        return /01/;
-    } else return false;
-  }
-
-  const findOther = (player, comp) => {
-    if (!/11/.test(player.string + comp.string)) {
-      // Mid first
-      return /11/;
-    } else if (/yc/.test(player.string)
-            && !/yc\w*yc/.test(player.string)
-            && !/yc/.test(comp.string)) {
-      // Opposite corner, y
-      return /yc/;
-    } else if (/zc/.test(player.string)
-            && !/zc\w*zc/.test(player.string)
-            && !/zc/.test(comp.string)) {
-      // Opposite corner, z
-      return /zc/;
-    } else if (!/c\w*c\w*c\w*c/.test(player.string + comp.string)) {
-      // Empty corner
-      return /c/;
-    } else {
-      // Empty side
-      return /s/
-    }
-  }
-
-  const markBoard = $li => {
-    setTimeout(() => {
-      $li.addClass('box-filled-2').css('background-image', "url('img/x.svg')");
-    }, 100);
-  };
 });
